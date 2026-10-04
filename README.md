@@ -31,4 +31,27 @@ Only recovery preferences are stored at `/cache/TWRP/.twrps`, independent of
 locked internal media. The system modification prompt checkbox remains usable
 while FBE is locked. Clearing cache also clears these preferences. Backup paths
 and Android encryption are unchanged; no PIN or encryption keys are persisted
-as TWRP preferences. Samsung FBE decryption remains unsupported.
+as TWRP preferences. PIN-based Samsung FBE decryption has been demonstrated with the installed
+LineageOS 21 / Android 14 data. See the FBE validation note in the build repo.
+
+
+## Samsung FBE hardware services
+
+`install_keyring` creates the inherited legacy keyring used by Linux 4.4.
+Recovery mounts the installed vendor and Android system read-only and starts
+MobiCore, Keymaster 4.0, Gatekeeper 1.0 and Keystore2 in order. Gatekeeper requires
+normal EFS read/write access for verification state and counters; provisioning
+files must never be wiped as a decryption workaround. Recovery-only SELinux
+rules label the dedicated RPMB block node and allow the kernel worker to access
+that node. The kernel handles failed opens without dereferencing error pointers.
+
+The recovery header uses OS 14.0.0 / patch 2026-09-01 to match this LineageOS 21
+Keymaster input. A startup guard compares it with installed Android properties.
+This is compatibility metadata, not an upgrade of TWRP's Android 12.1 code or
+its security patch level. A ROM upgrade changing those inputs needs a matching
+recovery build. Other firmware, credentials or Android releases remain untested.
+
+Existing Android key files are read, not generated or replaced. The Android
+Keystore DB and any WAL are copied to tmpfs with recovery Keystore2 stopped;
+the source DB remains untouched. Hardware authentication failures preserve the
+locked state. PINs are entered through TWRP and are not recovery preferences.

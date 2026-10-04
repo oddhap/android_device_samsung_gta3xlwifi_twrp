@@ -2,6 +2,8 @@
 # Stock CWA1 and our working recovery USB enumeration use configfs.
 on init
     setprop sys.usb.configfs 1
+    # Linux 4.4 uses the inherited legacy fscrypt session keyring.
+    install_keyring
 
 # Extend TWRP's standard /config gadget, which already supplies ADB/sideload.
 on fs && property:sys.usb.configfs=1
@@ -22,3 +24,59 @@ on property:sys.usb.config=mtp,adb && property:sys.usb.ffs.ready=1 && property:s
     symlink /config/usb_gadget/g1/functions/ffs.mtp /config/usb_gadget/g1/configs/b.1/f2
     write /config/usb_gadget/g1/UDC ${sys.usb.controller}
     setprop sys.usb.state ${sys.usb.config}
+
+# Bring up only the vendor services required to unlock existing FBE keys.
+# Keep system/vendor read-only. Gatekeeper needs normal EFS writes for PIN
+# verification state, including attempt counters; never wipe provisioning data.
+on post-fs
+    wait /dev/block/platform/13500000.dwmmc0/by-name/vendor 10
+    mkdir /vendor 0755 root root
+    mount ext4 /dev/block/platform/13500000.dwmmc0/by-name/vendor /vendor ro
+    mkdir /system_root 0755 root root
+    mount ext4 /dev/block/platform/13500000.dwmmc0/by-name/system /system_root ro
+    mkdir /mnt/vendor/efs 0775 system system
+    mount ext4 /dev/block/platform/13500000.dwmmc0/by-name/efs /mnt/vendor/efs rw nosuid nodev noatime
+    symlink /mnt/vendor/efs /efs
+    chown system system /dev/mobicore
+    chmod 0660 /dev/mobicore
+    chown system system /dev/mobicore-user
+    chmod 0660 /dev/mobicore-user
+    exec_start recovery-crypto-props
+
+on property:twrp.crypto.props.ready=1
+    start recovery-mobicore
+    start recovery-keymaster
+    start recovery-gatekeeper
+    chown keystore keystore /tmp/misc/keystore
+    chmod 0700 /tmp/misc/keystore
+    start keystore2
+
+service recovery-crypto-props /system/bin/sh /system/bin/twrp-prepare-crypto.sh
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+service recovery-mobicore /vendor/bin/mcDriverDaemon -r /vendor/app/mcRegistry/FFFFFFFF000000000000000000000001.drbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000000a.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000016.tlbin -r /vendor/app/mcRegistry/ffffffffd0000000000000000000001c.tlbin -r /vendor/app/mcRegistry/ffffffffd00000000000000000000045.drbin
+    user system
+    group system
+    setenv MC_AUTH_TOKEN_PATH /efs
+    disabled
+    seclabel u:r:recovery:s0
+
+service recovery-keymaster /vendor/bin/hw/android.hardware.keymaster@4.0-service
+    interface android.hardware.keymaster@4.0::IKeymasterDevice default
+    user system
+    group system drmrpc
+    setenv LD_LIBRARY_PATH /vendor/lib:/vendor/lib/hw:/system/lib
+    disabled
+    seclabel u:r:recovery:s0
+
+service recovery-gatekeeper /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
+    interface android.hardware.gatekeeper@1.0::IGatekeeper default
+    user system
+    group system 5678
+    setenv LD_LIBRARY_PATH /vendor/lib:/vendor/lib/hw:/system/lib
+    disabled
+    seclabel u:r:recovery:s0

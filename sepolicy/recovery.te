@@ -1,0 +1,8 @@
+# Samsung's secure-RPMB worker opens its dedicated block device in kernel
+# context. Keep the extra access recovery-only and limited to that node.
+type recovery_rpmb_block_device, dev_type;
+recovery_only(`
+  allow kernel self:capability sys_rawio;
+  allow kernel block_device:dir search;
+  allow kernel recovery_rpmb_block_device:blk_file { getattr open read write ioctl };
+')

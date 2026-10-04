@@ -15,3 +15,5 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     ro.hardware=exynos7904 \
     ro.adb.secure=0 \
     ro.adb.secure.recovery=0
+
+PRODUCT_PACKAGES += resetprop

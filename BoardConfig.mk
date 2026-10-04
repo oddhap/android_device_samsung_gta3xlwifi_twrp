@@ -78,3 +78,12 @@ RECOVERY_LIBRARY_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libresetprop.so
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 TW_EXCLUDE_LPDUMP := true
+
+# Hardware FBE services use the installed vendor partition and recovery policy.
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
+TARGET_RECOVERY_DEVICE_MODULES += resetprop
+RECOVERY_BINARY_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/bin/resetprop
+
+# Samsung Keymaster binds blobs to the boot header patch level. Match the
+# installed LineageOS 21 input; this does not update recovery's Android 12 code.
+BOARD_RECOVERY_MKBOOTIMG_ARGS += --os_version 14.0.0 --os_patch_level 2026-09-01
