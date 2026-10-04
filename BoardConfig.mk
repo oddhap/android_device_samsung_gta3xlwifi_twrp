@@ -56,7 +56,9 @@ TW_THEME := portrait_hdpi
 TARGET_SCREEN_WIDTH := 1200
 TARGET_SCREEN_HEIGHT := 1920
 TARGET_SCREEN_DENSITY := 240
-TW_DEVICE_VERSION := sm-t510-native-test
+TW_OMIT_DEVICE_VERSION := true
+# Internal media is FBE-locked in recovery; keep only TWRP preferences in cache.
+TW_SETTINGS_STORAGE_PATH := /cache
 TW_MTP_DEVICE := SM-T510
 TW_HAS_DOWNLOAD_MODE := true
 TW_NO_REBOOT_BOOTLOADER := true

@@ -22,3 +22,13 @@ Device reference audited: gta3xlwifi-dev/android_device_samsung_gta3xlwifi_twrp,
 revision d74a521b1af73c8e9ee990aa763c6947d5eb3c55. This tree corrects that
 reference's model, display geometry and boot header for the tested SM-T510.
 New configuration is Apache-2.0; upstream and stock notices retain their terms.
+
+## Version and preferences
+
+The UI displays only `3.7.1_12`. Device options `TW_OMIT_DEVICE_VERSION` and
+`TW_SETTINGS_STORAGE_PATH` require the platform patches in the build repository.
+Only recovery preferences are stored at `/cache/TWRP/.twrps`, independent of
+locked internal media. The system modification prompt checkbox remains usable
+while FBE is locked. Clearing cache also clears these preferences. Backup paths
+and Android encryption are unchanged; no PIN or encryption keys are persisted
+as TWRP preferences. Samsung FBE decryption remains unsupported.
